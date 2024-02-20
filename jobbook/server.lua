@@ -1,17 +1,42 @@
-VORP = exports.vorp_core:vorpAPI()
-local VorpCore = {}
-local ServerRPC = exports.vorp_core:ServerRpcCall() --[[@as ServerRPC]] -- for intellisense
-local VORPutils = {}
 
-TriggerEvent("getUtils", function(utils)
-    VORPutils = utils
-end)
-TriggerEvent("getCore",function(core)
-    VorpCore = core
-end)
+local VORPcore = exports.vorp_core:GetCore()
 
+local ServerRPC = exports.vorp_core:ServerRpcCall()
+ 
 
+ VORPcore.Callback.Register("jobbook:switchJob", function(source,cb,jobtable)
+        local _source = source
+        local user = VORPcore.getUser(_source)
+        local character = user.getUsedCharacter
+        local charid = character.charIdentifier
+        local jobinfo = params.jobtable
+        local jobname = jobinfo[1]
+        local jobgrade = jobinfo[2]
+        local jobtitle = jobinfo[3]    
 
+        local affectedRows = MySQL.update.await('update characters set job=?, joblabel=?, jobgrade=? where charidentifier=?', {
+    jobname, joblabel, jobgrade, charid })
+         print(affectedRows)
+        if affectedRows then
+            cb=true
+        else
+             cb=false   
+        end 
+ end)
+
+ VORPcore.Callback.Register("jobbook:saveJob", function(source,cb,jobtable)
+        local _source = source
+        local user = VORPcore.getUser(_source)
+        
+   callback(...)
+ end)
+
+ VORPcore.Callback.Register("jobbook:quitJob", function(source,cb,jobtable)
+        local _source = source
+        local user = VORPcore.getUser(_source)
+        
+   callback(...)
+ end)
 
 VORP.addNewCallBack("lottery:checkifentered", function(source, cb, params)
   local _source = source
@@ -32,44 +57,6 @@ VORP.addNewCallBack("lottery:checkifentered", function(source, cb, params)
 end)
 
 
-
-VORP.addNewCallBack("lottery:isAdmin", function(source, cb, params)
-  local _source = source
-  local user = VorpCore.getUser(_source)
-
-  local isAllowed = false
-  for k, v in pairs(Config.ElectionOfficials) do
-      for _, group in ipairs(v) do
-          if group == user.getGroup then
-              isAllowed = true
-              break
-          end
-      end
-      if isAllowed then
-          break
-      end
-  end
-  
-  cb(isAllowed)
-  
-
-
-    cb(isAllowed)  
-
-end)
-
-
-
-VORP.addNewCallBack("lottery:getResults", function(source, cb, params)
-  local _source = source
-  local user = VorpCore.getUser(_source)
-  local charId = (user.getUsedCharacter).charIdentifier
-  local query
-      query = 'SELECT * from lotteries where open = 0'
-  MySQL.query(query, queryParams, function(result)
-      cb(result)
-  end)
-end)
 
 
 VORP.addNewCallBack('lottery:getLotteries', function(source, cb, params)
