@@ -126,8 +126,16 @@ function SwitchCurrentJob(jobtable)
 end
 
 function SaveJob()
+    
     VORPCore.Callback.TriggerASync("jobbook:saveJob", function(result)
     print(result)
+    local title
+    if result then
+        title = "Your job has been saved"  
+        VORPcore.NotifyTip(title,4000)
+    else
+        title = "Your job has not been saved"
+        VORPcore.NotifyTip(title,4000)
    end,)
 end
 function QuitJob()
