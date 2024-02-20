@@ -40,7 +40,7 @@ function OpenMainMenu()
             if data.current.value == "switch" then
                 OpenSwitchMenu()
             elseif data.current.value == "save" then
-                OpenSaveMenu()
+                SaveJob()
             elseif data.current.value == "quit" then
                 OpenQuitMenu()
             elseif data.current.value == "exit_menu" then
@@ -63,16 +63,22 @@ function OpenSwitchMenu()
     addMenuElement = { label = "Exit Menu", value = "exit_menu", desc = "Close Menu" }
     table.insert(menuElements, addMenuElement)
     --Here need to get all jobs the person has
-    TriggerEvent("vorp:ExecuteServerCallBack", "jobbook:getjobs", function(cb)
-        local result = cb
-        if #cb == 0 then
+    --@param name string callback name
+    --@vararg ...? any can send as many parameters as you want 
+    local jobname
+    local jobgrade
+    local jobtitle
+    local label
+    local result =  VORPcore.Callback.TriggerAwait("jobbook:getJobs")
+        
+        if #result == 0 then
             print("No jobs")
             TriggerEvent("vorp:TipBottom", "You don't have any jobs", 4000)
-        end
-
-        for k, v in pairs(cb) do
-            label = cb[k].jobdata
-            value = cb[k].jobdata
+        else
+            for k, v in pairs(result) do
+            label = result[k].jobtitle.. " "..result[k].jobgrade
+            
+            value = {jobname, jobgrade, jobtitle}
             addMenuElement = { label = label, value = value, desc = "Select this job" }
             table.insert(menuElements, addMenuElement)
         end
@@ -82,14 +88,14 @@ function OpenSwitchMenu()
         addMenuElement = { label = "Exit Menu", value = "exit_menu", desc = "Close Menu" }
         table.insert(menuElements, addMenuElement)
 
-
+        
         -- Open the menu using VORPMenu
         VORPMenu.Open(
             "default",
             GetCurrentResourceName(),
-            "resultsmenu",
+            "switchmenu",
             {
-                title = "View Lottery Results",
+                title = "Switch Job",
                 subtext = "",
                 align = "top-center",
                 elements = menuElements,
@@ -102,25 +108,33 @@ function OpenSwitchMenu()
                     print("close")
                     menu.close()
                 else
-                    print("here")
+                    SwitchCurrentJob(data.current.value)
                 end
             end,
             function(data, menu)
                 menu.close()
             end)
     end)
+        
+        end
+
+        
    
 end
+function SwitchCurrentJob(jobtable)
+     local result =  VORPcore.Callback.TriggerAwait("jobbook:switchJob")
+end
 
-function OpenSaveMenu()
-    --- Trigger a client callback Synchronously
-    ClientRPC.Callback.TriggerASync(saveJob, function(result)
+function SaveJob()
+    VORPCore.Callback.TriggerASync("jobbook:saveJob", function(result)
     print(result)
    end,)
-
-
 end
-
+function QuitJob()
+    VORPCore.Callback.TriggerASync("jobbook:quitJob", function(result)
+    print(result)
+   end,)
+end
 RegisterCommand("openjobbook", function()
-   
+   TriggerEvent('jobbook:openbook')
 end)
