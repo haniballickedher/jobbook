@@ -1,9 +1,6 @@
 
 local VORPcore = exports.vorp_core:GetCore()
 
-local ServerRPC = exports.vorp_core:ServerRpcCall()
- 
-
  VORPcore.Callback.Register("jobbook:switchJob", function(source,cb,jobtable)
         local _source = source
         local user = VORPcore.getUser(_source)
@@ -27,7 +24,15 @@ local ServerRPC = exports.vorp_core:ServerRpcCall()
  VORPcore.Callback.Register("jobbook:saveJob", function(source,cb,jobtable)
         local _source = source
         local user = VORPcore.getUser(_source)
+   
+        -- get the characters jobs from the db
         
+        -- compare the number of rows to the rows in the config
+        -- going to need to interate through and see which ones are goverment and compare counts.
+        local numJobs
+        local numgovtJobs
+        --if under the limit add the job
+        -- if over return an error
    callback(...)
  end)
 
@@ -38,99 +43,6 @@ local ServerRPC = exports.vorp_core:ServerRpcCall()
    callback(...)
  end)
 
-VORP.addNewCallBack("lottery:checkifentered", function(source, cb, params)
-  local _source = source
-  local user = VorpCore.getUser(_source)
-  local charId = (user.getUsedCharacter).charIdentifier
-  local lottery = params.id
-  local isEntered = false -- Initialize the variable
-  MySQL.single('SELECT * FROM lotterytickets WHERE charid = ?', {charId},
-    function(row)
-      if not row then
-        isEntered = false
-      else
-        isEntered = true
-      end
-      cb(isEntered) -- Call the callback with the result
-    end
-  )
-end)
-
-
-
-
-VORP.addNewCallBack('lottery:getLotteries', function(source, cb, params)
-  local query
-      query = 'SELECT * from lotteries where open = 1'
-  MySQL.query(query, queryParams, function(result)
-      cb(result)
-  end)
-end)
-
-VORP.addNewCallBack('lottery:hasenteredalready', function(source, cb, params)
-  local _source = source
-  local user = VorpCore.getUser(_source)
-  local charId = (user.getUsedCharacter).charIdentifier
-  local lotteryid = params.lotteryid
-  local query, queryParams
- 
-      query = 'SELECT * from lotterytickets where charID=@charId and lotteryid = @lotteryid '
-      queryParams = { ['@lotteryid'] = lotteryid, ['@charId'] = charId }
-
-  MySQL.query(query, queryParams, function(result)
-     -- Check if there is at least one row in the result
-     local hasEntered = #result > 0
-     print("has entered", hasEntered)
-     cb(hasEntered)
-      
-  end)
-end)
-
-
-RegisterServerEvent('addNewLottery')
-AddEventHandler('addNewLottery', function(lotteryname, daystoopen, price, description)
-  local startdatestring = "NOW()" 
-  local enddatestring = "DATE_ADD(NOW(),INTERVAL "..daystoopen.." DAYS" 
-      query = 'INSERT INTO lotteries (lotteryname, start, days, end, open, price, desc) VALUES (@lotteryname, @startdatestring, @daystoopen, @enddatestring, 1, @price, @description)) '
-      queryParams = {['@lotteryname'] = lotteryname, ['@startdatestring'] =startdatestring, ['@daystoopen'] = daystoopen, ['@enddatestring'] = enddatestring, ['@price'] =price, ['@description'] = description }
-      MySQL.Async.execute(query, queryParams)
-end)
-
-
-
-
-
---[[ 
-VORP.addNewCallBack("democracy:getResults", function(source, cb, params)
-  local _source = source
-  local user = VorpCore.getUser(_source)
-  local charId = (user.getUsedCharacter).charIdentifier
-  local position = params.position
-  local location = params.location
-  local jurisdiction = params.jurisdiction
-  local query, queryParams
-
-  if jurisdiction == "federal" then
-    query = 'SELECT COUNT(voteID) as votes, candidate_name, b.position FROM ballot b ' ..
-            'LEFT JOIN ballot_votes v ON b.id = v.ballotID WHERE POSITION = @position ' ..
-            'GROUP BY candidate_name, v.office, jurisdiction, location, region, city ORDER BY votes DESC'
-    queryParams = { ['@position'] = position }
-  elseif jurisdiction == "regional" then
-    query = 'SELECT COUNT(voteID) as votes, candidate_name, b.position, b.city, b.region FROM ballot b ' ..
-            'LEFT JOIN ballot_votes v ON b.id = v.ballotID WHERE POSITION = @position AND region = @region ' ..
-            'GROUP BY candidate_name, v.office, region, city ORDER BY votes DESC'
-    queryParams = { ['@position'] = position, ['@region'] = location }
-  elseif jurisdiction == "local" then
-    query = 'SELECT COUNT(voteID) as votes, candidate_name, b.position, b.city, b.region FROM ballot b ' ..
-            'LEFT JOIN ballot_votes v ON b.id = v.ballotID WHERE POSITION = @position AND city = @city ' ..
-            'GROUP BY candidate_name, v.office, region, city ORDER BY votes DESC'
-    queryParams = { ['@position'] = position, ['@city'] = location }
-  end
-
-    MySQL.query(query, queryParams, function(result)
-    cb(result)
-  end)
-end) ]]
 
 --[[ function  SendToDiscordWebhook(title, description)
   for k, v in pairs(Config.Webhooks) do 
