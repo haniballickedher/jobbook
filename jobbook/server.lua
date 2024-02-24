@@ -1,6 +1,32 @@
 
 local VORPcore = exports.vorp_core:GetCore()
+VORPcore.Callback.Register("jobbook:getJobs", function(source,cb,jobtable)
+  local _source = source
+  local user = VORPcore.getUser(_source)
+  local Character = VORPcore.getUser(_source).getUsedCharacter 
+  local charid = Character.charIdentifier 
+  
+  local response = MySQL.query.await('SELECT * from jobbook  WHERE charid = ?', {
+    charid
+  })
+  if response then
+    callback(response)
+  else
+    --insert an unemployed for the person
+              --no jobs saved yet
+              local unemployed = Config.unemployedJob
+              
+              local id = MySQL.insert.await('INSERT INTO jobbook (charid,jobname, jobgrade,jobtitle ) VALUES (?, ?, ?)', {
+                identifier, unemployed, 0, "Jobless and Hopeless"
+            })
 
+            local response = MySQL.query.await('SELECT * from jobbook  WHERE id = ?', {
+              id
+            })
+            callback(response)
+  end
+  
+end)
  VORPcore.Callback.Register("jobbook:switchJob", function(source,cb,jobtable)
         local _source = source
         local user = VORPcore.getUser(_source)
@@ -23,17 +49,38 @@ local VORPcore = exports.vorp_core:GetCore()
 
  VORPcore.Callback.Register("jobbook:saveJob", function(source,cb,jobtable)
         local _source = source
-        local user = VORPcore.getUser(_source)
-   
+         local Character = VORPcore.getUser(_source).getUsedCharacter 
+        local identifer = Character.charIdentifier
+        local jobname - jobtable[1]
+        local jobgrade = jobtable[2]
+        local jobtitle = jobtable[3]
+        local success
         -- get the characters jobs from the db
-        
+        local response = MySQL.query.await('SELECT * from jobbook WHERE charid = ?', {
+          identifier
+      })
+       
+      
+        if response then
         -- compare the number of rows to the rows in the config
-        -- going to need to interate through and see which ones are goverment and compare counts.
-        local numJobs
-        local numgovtJobs
-        --if under the limit add the job
-        -- if over return an error
-   callback(...)
+        if #response < Config.MaxTotalJobs then
+          local numJobs
+          local numgovtJobs
+          for i = 1, #response do
+            local row = response[i]
+            print(row.job.." "..row.grade)
+          end
+        else
+          --no jobs saved yet
+          local id = MySQL.insert.await('INSERT INTO jobbook (charid,jobname, jobgrade,jobtitle ) VALUES (?, ?, ?)', {
+            identifier, jobname, jobgrade, jobtitle
+        })
+         
+          print(id)
+        success = "Job Saved"
+        end if
+      end
+   callback(success)
  end)
 
  VORPcore.Callback.Register("jobbook:quitJob", function(source,cb,jobtable)

@@ -113,15 +113,11 @@ function OpenSwitchMenu()
             end,
             function(data, menu)
                 menu.close()
-            end)
-    end)
-        
+            end)   
         end
-
-        
-   
 end
-function SwitchCurrentJob(jobtable)
+
+function SwitchCurrentJob(jobtable)  --name, grade, title
      local result =  VORPcore.Callback.TriggerAwait("jobbook:switchJob")
 end
 
