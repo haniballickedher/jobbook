@@ -1,4 +1,4 @@
-local VORPcore = exports.vorp_core:GetCore()-
+local VORPcore = exports.vorp_core:GetCore()
 
 local VORPMenu = {}
 
@@ -17,12 +17,12 @@ function OpenMainMenu()
     local menuElements = {
         { label = "Exit Menu", value = "exit_menu", desc = "Close Menu" },
     }
-    local addMenuElement
-    addMenuElement = { label = "Switch Job", value = "switch", desc = "Change Jobs" }
+    local addMenuElement   
+    addMenuElement = { label = "Quit Job", value = "quit", desc = "Quit a Job" }
     table.insert(menuElements, 1, addMenuElement)
     addMenuElement = { label = "Save Job", value = "save", desc = "Save Current Job" }
     table.insert(menuElements, 1, addMenuElement)
-    addMenuElement = { label = "Quit Job", value = "quit", desc = "Quit a Job" }
+    addMenuElement = { label = "Switch Job", value = "switch", desc = "Change Jobs" }
     table.insert(menuElements, 1, addMenuElement)
     -- Open the menu using VORPMenu
     VORPMenu.Open(
@@ -40,9 +40,9 @@ function OpenMainMenu()
             if data.current.value == "switch" then
                 OpenSwitchMenu()
             elseif data.current.value == "save" then
-                SaveJob()
+                SaveJob(data.current.value)
             elseif data.current.value == "quit" then
-                OpenQuitMenu()
+                QuitJob()
             elseif data.current.value == "exit_menu" then
                 print("close")
                 menu.close()
@@ -67,7 +67,7 @@ function OpenSwitchMenu()
     --@vararg ...? any can send as many parameters as you want 
     local jobname
     local jobgrade
-    local jobtitle
+    local joblabel
     local label
     local result =  VORPcore.Callback.TriggerAwait("jobbook:getJobs")
         
@@ -76,17 +76,14 @@ function OpenSwitchMenu()
             TriggerEvent("vorp:TipBottom", "You don't have any jobs", 4000)
         else
             for k, v in pairs(result) do
-            label = result[k].jobtitle.. " "..result[k].jobgrade
+            label = result[k].jobname.. " "..result[k].jobgrade
             
-            value = {jobname, jobgrade, jobtitle}
+            value = {jobname, jobgrade, joblabel}
             addMenuElement = { label = label, value = value, desc = "Select this job" }
             table.insert(menuElements, addMenuElement)
         end
 
-        addMenuElement = { label = "Main Menu", value = "back", desc = "Back to Main Menu" }
-        table.insert(menuElements, addMenuElement)
-        addMenuElement = { label = "Exit Menu", value = "exit_menu", desc = "Close Menu" }
-        table.insert(menuElements, addMenuElement)
+     
 
         
         -- Open the menu using VORPMenu
@@ -103,7 +100,7 @@ function OpenSwitchMenu()
             },
             function(data, menu)
                 if data.current.value == "back" then
-                    OpenStartMenu()
+                    OpenMainMenu()
                 elseif data.current.value == "exit_menu" then
                     print("close")
                     menu.close()
@@ -122,8 +119,8 @@ function SwitchCurrentJob(jobtable)  --name, grade, title
 end
 
 function SaveJob()
-    
-    VORPCore.Callback.TriggerASync("jobbook:saveJob", function(result)
+ 
+    VORPcore.Callback.TriggerAwait("jobbook:saveJob", function(result)
     print(result)
     local title
     if result then
@@ -132,13 +129,17 @@ function SaveJob()
     else
         title = "Your job has not been saved"
         VORPcore.NotifyTip(title,4000)
-   end,)
+    end
+   end,jobtable)
 end
+
+
 function QuitJob()
-    VORPCore.Callback.TriggerASync("jobbook:quitJob", function(result)
+    VORPcore.Callback.TriggerAsync("jobbook:quitJob", function(result)
     print(result)
-   end,)
+   end)
 end
+
 RegisterCommand("openjobbook", function()
    TriggerEvent('jobbook:openbook')
 end)
