@@ -15,3 +15,10 @@ Config.Languages = {
     
 
 }
+
+Config.Webhooks={
+    URL ='',
+    Color = '16711680',
+    WebhookName = 'Job Bot',
+    WebhookLogo = '32x32'
+}
