@@ -6,9 +6,10 @@ TriggerEvent("vorp_menu:getData", function(cb)
     VORPMenu = cb
 end)
 
+
 RegisterNetEvent('jobbook:openbook')
 AddEventHandler('jobbook:openbook', function(city, region)
-    PlayAnimation()
+    -- PlayAnimation()
     Citizen.Wait(1000)
     OpenMainMenu()
 end)
@@ -44,11 +45,11 @@ end
 
 function OpenMainMenu()
     VORPMenu.CloseAll()
-    local menuElements = {{
+    local menuElements = { {
         label = "Exit Menu",
         value = "exit_menu",
         desc = "Close Menu"
-    }}
+    } }
     local addMenuElement
     addMenuElement = {
         label = "Quit Job",
@@ -68,11 +69,19 @@ function OpenMainMenu()
         desc = "Change Jobs"
     }
     table.insert(menuElements, 1, addMenuElement)
+    local submenutitle = ""
+
+    local result = VORPcore.Callback.TriggerAwait("jobbook:getCurrentJob")
+    if result then
+        submenutitle = result.jobgrade.." "..result.jobname
+    end
     -- Open the menu using VORPMenu
+
+
     VORPMenu.Open("default", GetCurrentResourceName(), "mainmenu", {
         title = "Jobbook Menu",
-        subtext = "Career Management",
-        align = "top-center",
+        subtext = "Current job:"..submenutitle,
+        align = "top-right",
         elements = menuElements,
         itemHeight = "4vh"
     }, function(data, menu)
@@ -81,7 +90,7 @@ function OpenMainMenu()
         elseif data.current.value == "save" then
             SaveJob(data.current.value)
         elseif data.current.value == "quit" then
-            QuitJob()
+            OpenQuitMenu()
         elseif data.current.value == "exit_menu" then
             print("close")
             menu.close()
@@ -107,9 +116,7 @@ function OpenSwitchMenu()
         desc = "Close Menu"
     }
     table.insert(menuElements, addMenuElement)
-    -- Here need to get all jobs the person has
-    -- @param name string callback name
-    -- @vararg ...? any can send as many parameters as you want 
+
     local jobname
     local jobgrade
     local joblabel
@@ -121,9 +128,18 @@ function OpenSwitchMenu()
         TriggerEvent("vorp:TipBottom", "You don't have any jobs", 4000)
     else
         for k, v in pairs(result) do
-            label = result[k].jobname .. " " .. result[k].jobgrade
-
-            value = {jobname, jobgrade, joblabel}
+            jobname = result[k].jobname
+            jobgrade = result[k].jobgrade
+            if result[k].joblabel then
+                joblabel = result[k].joblabel
+            else
+                joblabel = " "
+            end
+            label = jobname.." "..jobgrade
+            
+            value = { result[k].jobname, result[k].jobgrade, "" }    
+            
+            
             addMenuElement = {
                 label = label,
                 value = value,
@@ -136,7 +152,7 @@ function OpenSwitchMenu()
         VORPMenu.Open("default", GetCurrentResourceName(), "switchmenu", {
             title = "Switch Job",
             subtext = "",
-            align = "top-center",
+            align = "top-right",
             elements = menuElements,
             itemHeight = "4vh"
         }, function(data, menu)
@@ -154,31 +170,97 @@ function OpenSwitchMenu()
     end
 end
 
+function OpenQuitMenu()
+    VORPMenu.CloseAll()
+    local menuElements = {}
+    local addMenuElement
+    addMenuElement = {
+        label = "Main Menu",
+        value = "back",
+        desc = "Back to Main Menu"
+    }
+    table.insert(menuElements, addMenuElement)
+    addMenuElement = {
+        label = "Exit Menu",
+        value = "exit_menu",
+        desc = "Close Menu"
+    }
+    table.insert(menuElements, addMenuElement)
+    -- Here need to get all jobs the person has
+    -- @param name string callback name
+    -- @vararg ...? any can send as many parameters as you want
+    local jobname
+    local jobgrade
+    local joblabel
+    local label
+    local result = VORPcore.Callback.TriggerAwait("jobbook:getJobs")
+
+    if #result == 0 then
+        print("No jobs")
+        TriggerEvent("vorp:TipBottom", "You don't have any jobs", 4000)
+    else
+        for k, v in pairs(result) do
+            label = result[k].jobname .. " " .. result[k].jobgrade
+            value = result[k].id
+            addMenuElement = {
+                label = label,
+                value = value,
+                desc = "Quit this job"
+            }
+            table.insert(menuElements, addMenuElement)
+        end
+
+        -- Open the menu using VORPMenu
+        VORPMenu.Open("default", GetCurrentResourceName(), "switchmenu", {
+            title = "Quit Job",
+            subtext = "",
+            align = "top-right",
+            elements = menuElements,
+            itemHeight = "4vh"
+        }, function(data, menu)
+            if data.current.value == "back" then
+                OpenMainMenu()
+            elseif data.current.value == "exit_menu" then
+                print("close")
+                menu.close()
+            else
+                QuitJob(data.current.value)
+            end
+        end, function(data, menu)
+            menu.close()
+        end)
+    end
+end
+
 function SwitchCurrentJob(jobtable) -- name, grade, title
-    local result = VORPcore.Callback.TriggerAwait("jobbook:switchJob")
+    local jobname = jobtable[1]
+    local jobgrade = jobtable[2]
+    local joblabel = jobtable[3]
+   
+    TriggerServerEvent("jobbook:switchJob", jobname, jobgrade, joblabel)
 end
 
 function SaveJob()
-
     VORPcore.Callback.TriggerAwait("jobbook:saveJob", function(result)
         print(result)
-        local title
+       
         if result then
-            title = "Your job has been saved"
-            VORPcore.NotifyTip(title, 4000)
+            VORPcore.NotifyTip(Config.Languages.savedJob, 4000)
         else
-            title = "Your job has not been saved"
-            VORPcore.NotifyTip(title, 4000)
+            VORPcore.NotifyTip(Config.Languages.jobNotSaved, 4000)
         end
     end, jobtable)
 end
 
-function QuitJob()
+function QuitJob(jobid)
     VORPcore.Callback.TriggerAsync("jobbook:quitJob", function(result)
         print(result)
-    end)
+    end, jobid)
+
+    VORPcore.NotifyTip(Config.Languages.youquit, 4000)
+    OpenQuitMenu()
 end
 
-RegisterCommand("openjobbook", function()
+RegisterCommand(Config.Command, function()
     TriggerEvent('jobbook:openbook')
 end)
